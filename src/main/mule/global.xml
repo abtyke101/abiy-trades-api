@@ -15,7 +15,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<configuration-properties doc:name="Configuration properties" doc:id="2981d546-dcfc-4749-9006-22807dd02c84" file="config/${env}.properties" />
 	<configuration doc:name="Configuration" doc:id="7b53c5d5-5cda-449d-9e52-64e70b1aee1a" defaultErrorHandler-ref="global-Error-Handler" />
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="d436f106-bc0c-43b1-92d4-d7f7364fe1b7">
-		<db:my-sql-connection host="localhost" port="3306" user="root" password="Mes@fin123" />
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}"/>
 	</db:config>
 	<file:config name="File_Config" doc:name="File Config" doc:id="fc0a1791-a6e0-4b05-86eb-3dd12c1a5f2b" />
 	 <http:listener-config name="abiy-trade-api-httpListenerConfig">
