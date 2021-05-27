@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="2981d546-dcfc-4749-9006-22807dd02c84" file="config/${env}.properties" />
+	<configuration doc:name="Configuration" doc:id="7b53c5d5-5cda-449d-9e52-64e70b1aee1a" defaultErrorHandler-ref="global-Error-Handler" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="d436f106-bc0c-43b1-92d4-d7f7364fe1b7">
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}"/>
+	</db:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="fc0a1791-a6e0-4b05-86eb-3dd12c1a5f2b" />
+	 <http:listener-config name="abiy-trade-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="abiy-trade-api-config" api="resource::9d4ed191-720d-42ad-85ce-e1129b7db9ce:abiy-trade-api:1.0.1:raml:zip:abiy-trade-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	
+	
+	<error-handler name="global-Error-Handler" doc:id="8bcf56ff-0031-40b8-8644-1245c7a0e81d" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="3885f7d1-6879-4284-a2ef-7f061d29cbf7" >
+			<flow-ref doc:name="set-error-response-subflow" doc:id="b9c9513d-11ee-4b92-b34f-a7552367a678" name="set-error-response-subflow"/>
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="set-error-response-subflow" doc:id="071ed498-e43d-4815-a0d7-91b8f3bb82f6" >
+		<ee:transform doc:name="set error response" doc:id="ddd5e1b2-8bbf-4ba1-b1af-20544d0e8295" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "failed",
+	"errorType": error.errorType,
+	"errorDescription": error.description
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0
+output application/json
+---
+(
+if (error.errorType.identifier == "BAD_REQUEST")
+400
+else if (error.errorType.identifier == "NOT_FOUND")
+404
+else if (error.errorType.identifier == "METHOD_NOT_ALLOWED")
+405
+else
+500
+)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</sub-flow>
+</mule>

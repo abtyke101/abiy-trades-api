@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<sub-flow name="process-trades-to-file-SubFlow" doc:id="4338d61e-c16a-4c6a-a11c-3e1da788f2da" >
+		<logger level="INFO" doc:name="Logger" doc:id="5e35606a-bd52-4e5d-a00d-fa05e5ee6ad7" message='#["request received to process trade file, correlationId: " ++ correlationId]'/>
+		<choice doc:name="Choice" doc:id="3d77a59b-9cea-41ab-a49f-194897109b35">
+			<when expression='#[lower(payload."type") == "equity"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="adb467e2-b45d-47b3-a3a3-9858cf30a59f" message='#["received equity trade, correlationId: " ++ correlationId]' />
+				<ee:transform doc:name="Transform Message" doc:id="b0eb1635-2107-4cf3-a098-4bd97af1b02a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="create-file-subFlow " doc:id="9d64e0bd-319e-46ee-afaf-fbfbae50a2a5" name="create-file-subFlow" />
+				<ee:transform doc:name="set response" doc:id="e477f75a-d111-403d-a015-d1be31116d72">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "trade processed successfully"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression='#[lower(payload."type") == "fx"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="620370a6-6b9b-48dd-a0d6-7f0c487981d8" message="recieved FX trade" />
+				<ee:transform doc:name="Transform Message" doc:id="e259fad9-cbb3-4924-b6ea-18c481baf8f5">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="filePath" ><![CDATA[%dw 2.0
+output application/json
+---
+p("fx.filePath") ++	(p("fx.fileName") ++ (now() as String {format:"yyyy_MM_dd_HH_mm_ss"}) ++ ".json")]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="create-file-subFlow" doc:id="adc80baf-7741-4c5d-95be-30c35381dd4d" name="create-file-subFlow" />
+				<ee:transform doc:name="set response" doc:id="db1ac815-a276-4284-a355-2857019fe8ae">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "trade processed successfully"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="9fe32d50-ce0c-4cf3-bd57-5b4df958bf39" message='invalid trde type' />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="create-file-subFlow" doc:id="bcceb08c-e4d0-4797-89aa-e392da6c383e" >
+		<logger level="INFO" doc:name="Logger" doc:id="ad0f7e1a-483f-4de6-b2a0-693ef4f40df4" message="ready to create a file" />
+		<file:write doc:name="Write" doc:id="18d3d923-63c4-47ac-90c5-f685132b842c" path="#[vars.filePath]" config-ref="File_Config" />
+		<logger level="INFO" doc:name="Logger" doc:id="d944f76b-2209-4f70-856a-a6947ef62ce9" message="file created successfully" />
+	</sub-flow>
+</mule>
